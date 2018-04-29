@@ -5,6 +5,7 @@ import java.util.*;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.phantomjs.PhantomJSDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -14,6 +15,20 @@ public class ScanAngel {
         final WebDriver driver = new PhantomJSDriver();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> driver.quit(), "Shutdown-thread"));
+
+        driver.get("https://angel.co/login");
+        WebElement webElementEmail = driver.findElement(By.name("user[email]"));
+
+        webElementEmail.sendKeys(System.getProperty("LOGIN"));
+
+        WebElement webElementPass = driver.findElement(By.name("user[password]"));
+
+        webElementPass.sendKeys(System.getProperty("PASSWORD"));
+        webElementEmail.submit();
+
+        // Wait for the page to load, timeout after 10 seconds
+        (new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(
+          By.xpath("//*[@id=\"root\"]/div[2]/div/div/div[1]/div[1]/div[2]/div[2]/div[1]/div[2]/div/img")));
 
         List<String> urls = Arrays.asList("https://angel.co/sharing-economy-4/investors",
                 "https://angel.co/social-network-2/investors",
