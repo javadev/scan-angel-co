@@ -96,19 +96,19 @@ System.out.println(item);
         return (String) ((JavascriptExecutor) driver).executeAsyncScript(
             "var url = arguments[0];" +
             "var callback = arguments[arguments.length - 1];" +
-            "var xhr = new XMLHttpRequest();" +
-            "xhr.open('GET', url, true);" +
-            "xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8');"+
-            "xhr.setRequestHeader('Accept-Encoding', 'gzip, deflate, br');"+
-            "xhr.setRequestHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36 OPR/52.0.2871.64');"+
+            "var xhr2 = new XMLHttpRequest();" +
+            "xhr2.open('GET', url, true);" +
+            "xhr2.setRequestHeader('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8');"+
+//            "xhr.setRequestHeader('Accept-Encoding', 'gzip, deflate, br');"+
+//            "xhr.setRequestHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36 OPR/52.0.2871.64');"+
 //            "xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');"+
-            "xhr.withCredentials = true;" +
-            "xhr.onreadystatechange = function() {" +
-            "  if (xhr.readyState == 4) {" +
-            "    callback(xhr.responseText);" +
+            "xhr2.withCredentials = true;" +
+            "xhr2.onreadystatechange = function() {" +
+            "  if (xhr2.readyState == 4) {" +
+            "    callback(xhr2.responseText);" +
             "  }" +
             "};" +
-            "xhr.send();", url);
+            "xhr2.send();", url);
     }
 
     private static String getLinkedIn(WebDriver driver, String url) throws Exception {
