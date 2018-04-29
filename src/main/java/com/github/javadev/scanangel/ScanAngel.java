@@ -5,9 +5,7 @@ import java.util.*;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
 import org.openqa.selenium.phantomjs.PhantomJSDriver;
-import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
@@ -17,10 +15,22 @@ public class ScanAngel {
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> driver.quit(), "Shutdown-thread"));
 
-        driver.navigate().to("https://angel.co/consumer-internet/investors");
+        List<String> urls = Arrays.asList("https://angel.co/sharing-economy-4/investors",
+                "https://angel.co/social-network-2/investors",
+                "https://angel.co/consumer-internet/investors",
+                "https://angel.co/consumer/investors",
+                "https://angel.co/real-estate-1/investors",
+                "https://angel.co/rental-housing/investors",
+                "https://angel.co/building-owners/investors");
+        for (String url : urls) {
+            ScanAngel.downloadForUrl(driver, url);
+        }
+        //Close the browser
+        driver.quit();
+    }
 
-        // Check the title of the page
-        System.out.println("Page title is: " + driver.getTitle());
+    private static void downloadForUrl(WebDriver driver, String url) throws Exception {
+        driver.navigate().to(url);
 
         // Wait for the page to load, timeout after 10 seconds
         (new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(
@@ -29,14 +39,14 @@ public class ScanAngel {
         Integer amountOfInvestors = Integer.parseInt(driver.findElement(
           By.xpath("//*[@id=\"root\"]/div[4]/div[1]/div[2]/ul/li[2]/a")).getText().replaceAll("[^0-9]", ""));
 
-System.out.println("amountOfInvestors - " + amountOfInvestors);
-        driver.manage().timeouts().setScriptTimeout(5, java.util.concurrent.TimeUnit.SECONDS);
+System.out.println(url + ", amountOfInvestors - " + amountOfInvestors);
+        driver.manage().timeouts().setScriptTimeout(10, java.util.concurrent.TimeUnit.SECONDS);
         List<Map<String, String>> data = new ArrayList<>();
         outer:
-        for (int index = 0; index < amountOfInvestors/25; index += 1) {
+        for (int index = 0; index < amountOfInvestors / 25; index += 1) {
             Thread.sleep(100);
 System.out.println(".");
-            String page = downloadPage(driver, index + 1);
+            String page = downloadPage(driver, url, index + 1);
             org.jsoup.nodes.Document doc = org.jsoup.Jsoup.parse(page);
             int emptyCount = 0;
             for (int index2 = 0; index2 < 25; index2 += 1) {
@@ -53,16 +63,15 @@ System.out.println(".");
                 item.put("url", element.attr("href"));
                 item.put("investments", doc.selectFirst("body > div > div:nth-child(" + index2 + ") > div > div.column.investments > div.value").text());
                 item.put("company", doc.selectFirst("body > div > div:nth-child(" + index2 + ") > div > div.item.column > div > div.text > div.blurb").text());
+                item.put("tags", doc.selectFirst("body > div > div:nth-child(" + index2 + ") > div > div.item.column > div > div.text > div.tags").text());
                 item.put("linkedin", getLinkedIn(driver, element.attr("href")));
                 data.add(item);
 System.out.println(item);
             }
         }
-        //Close the browser
-        driver.quit();
     }
 
-    private static String downloadPage(WebDriver driver, int pageNumber) {
+    private static String downloadPage(WebDriver driver, String url, int pageNumber) {
         return (String) ((JavascriptExecutor) driver).executeAsyncScript(
             "var url = arguments[0];" +
             "var callback = arguments[arguments.length - 1];" +
@@ -79,7 +88,7 @@ System.out.println(item);
             "    callback(JSON.parse(xhr.responseText)['html']);" +
             "  }" +
             "};" +
-            "xhr.send();", "//angel.co/consumer-internet/investors?page=" + pageNumber);
+            "xhr.send();", url + "?page=" + pageNumber);
     }
 
     private static String downloadProfile(WebDriver driver, String url) {
@@ -107,7 +116,6 @@ System.out.println(item);
         if (profile.contains("may have been made private or deleted")) {
             return "PRIVATE";
         }
-        System.out.println(profile);
         org.jsoup.nodes.Document doc = org.jsoup.Jsoup.parse(profile);
         org.jsoup.nodes.Element element = doc.selectFirst("a[data-field=linkedin_url]");
         return element == null ? null : element.attr("href");
