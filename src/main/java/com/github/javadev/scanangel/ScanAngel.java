@@ -113,7 +113,9 @@ System.out.println(item);
             "var xhr = new XMLHttpRequest();" +
             "xhr.open('GET', url, true);" +
             "xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8');"+
-            "xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');"+
+            "xhr.setRequestHeader('Accept-Encoding', 'gzip, deflate, br');"+
+            "xhr.setRequestHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36 OPR/52.0.2871.64');"+
+//            "xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');"+
             "xhr.withCredentials = true;" +
             "xhr.onreadystatechange = function() {" +
             "  if (xhr.readyState == 4) {" +
