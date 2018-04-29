@@ -98,10 +98,10 @@ System.out.println(item);
             "var callback = arguments[arguments.length - 1];" +
             "var xhr = new XMLHttpRequest();" +
             "xhr.open('GET', url, true);" +
-            "xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8');"+
-            "xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');"+
-            "xhr.setRequestHeader('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.75 Safari/537.36');"+
-            "xhr.withCredentials = true;" +
+//            "xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8');"+
+//            "xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');"+
+            "xhr.setRequestHeader('User-Agent', 'Mozilla/5.0');"+
+//            "xhr.withCredentials = true;" +
             "xhr.onreadystatechange = function() {" +
             "  if (xhr.readyState == 4) {" +
             "    callback(xhr.responseText);" +
