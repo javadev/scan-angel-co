@@ -98,6 +98,7 @@ System.out.println(item);
             "var xhr = new XMLHttpRequest();" +
             "xhr.open('GET', url, true);" +
             "xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8');"+
+            "xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');"+
             "xhr.withCredentials = true;" +
             "xhr.onreadystatechange = function() {" +
             "  if (xhr.readyState == 4) {" +
@@ -109,16 +110,16 @@ System.out.println(item);
 
     private static String getLinkedIn(WebDriver driver, String url) throws Exception {
         Thread.sleep(300);
-//        String profile = downloadProfile(driver, url);
-        org.jsoup.nodes.Document doc = org.jsoup.Jsoup.connect(url).get();
-        String profile = doc.toString();
+        String profile = downloadProfile(driver, url);
+//        org.jsoup.nodes.Document doc = org.jsoup.Jsoup.connect(url).get();
+//        String profile = doc.toString();
         if (profile.contains("Error code: TBLKIP")) {
             return "BLOCKED";
         }
         if (profile.contains("may have been made private or deleted")) {
             return "PRIVATE";
         }
-//        org.jsoup.nodes.Document doc = org.jsoup.Jsoup.parse(profile);
+        org.jsoup.nodes.Document doc = org.jsoup.Jsoup.parse(profile);
         org.jsoup.nodes.Element element = doc.selectFirst("a[data-field=linkedin_url]");
         return element == null ? null : element.attr("href");
     }
