@@ -192,6 +192,7 @@ System.out.println(item);
             for (CSVRecord record : records) {
                 String str[] = new String[]{record.get("name"), record.get("url"),
                     record.get("investments"), record.get("company"), record.get("tags"), record.get("linkedin")};
+                RowNum++;
                 createRow(sheet, RowNum, str);
             }
             try (FileOutputStream fileOutputStream = new FileOutputStream(xlsxFileAddress)) {
@@ -204,7 +205,6 @@ System.out.println(item);
 
     private static void createRow(XSSFSheet sheet, int RowNum, String[] str) {
         XSSFRow currentRow=sheet.createRow(RowNum);
-        RowNum++;
         for(int i=0;i<str.length;i++){
             currentRow.createCell(i).setCellValue(str[i]);
         }
