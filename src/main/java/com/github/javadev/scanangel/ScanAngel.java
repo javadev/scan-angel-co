@@ -72,8 +72,8 @@ public class ScanAngel {
     private static List<Map<String, String>> downloadForUrl(WebDriver driver, String url) throws Exception {
         driver.navigate().to(url);
 
-        // Wait for the page to load, timeout after 10 seconds
-        (new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(
+        // Wait for the page to load, timeout after 20 seconds
+        (new WebDriverWait(driver, 20)).until(ExpectedConditions.presenceOfElementLocated(
           By.xpath("//*[@id=\"root\"]/div[4]/div[2]/div[2]/div/div[2]/div[2]/div[1]/div/div[1]/div/div[2]/div[1]/a")));
 
         Integer amountOfInvestors = Integer.parseInt(driver.findElement(
@@ -105,6 +105,7 @@ System.out.println(".");
                 item.put("company", doc.selectFirst("body > div > div:nth-child(" + index2 + ") > div > div.item.column > div > div.text > div.blurb").text());
                 item.put("tags", doc.selectFirst("body > div > div:nth-child(" + index2 + ") > div > div.item.column > div > div.text > div.tags").text());
                 item.put("linkedin", getLinkedIn(driver, element.attr("href")));
+                item.put("email", getEmail(element.attr("href")));
                 data.add(item);
 System.out.println(item);
             }
@@ -149,6 +150,15 @@ System.out.println(item);
             "xhr.send();", url);
     }
 
+    private static String getEmail(String url) throws Exception {
+        for (Map<String, String> item : urlToLinkedin) {
+            if (item.get("url").equals(url)) {
+                return item.get("email");
+            }
+        }
+        return null;
+    }
+
     private static String getLinkedIn(WebDriver driver, String url) throws Exception {
         for (Map<String, String> item : urlToLinkedin) {
             if (item.get("url").equals(url)) {
@@ -177,6 +187,7 @@ System.out.println(item);
         Map<String, String> item = new LinkedHashMap<>();
         item.put("url", url);
         item.put("linkedin", element == null ? null : ("".equals(element.attr("href").trim()) ? null : element.attr("href")));
+        item.put("email", "null");
         urlToLinkedin.add(item);
         return element == null ? null : element.attr("href");
     }
@@ -184,18 +195,25 @@ System.out.println(item);
     public static void csvToXlsx(String csvFileAddress, String xlsxFileAddress) {
         try {
             XSSFWorkbook workBook = new XSSFWorkbook();
-            XSSFSheet sheet = workBook.createSheet("sheet1");
+            XSSFSheet sheet = workBook.createSheet("Sheet");
             int RowNum = 0;
             Reader in = new FileReader(csvFileAddress);
             Iterable<CSVRecord> records = CSVFormat.RFC4180.withFirstRecordAsHeader().parse(in);
-            String header[] = new String[]{"Name", "Url", "Investments", "Company", "Tags", "Linkedin"};
+            String header[] = new String[]{"Name", "Url", "Investments", "Company", "Tags", "Linkedin", "Email"};
             createRow(sheet, RowNum, header);
             for (CSVRecord record : records) {
                 String str[] = new String[]{record.get("name"), record.get("url"),
-                    record.get("investments"), record.get("company"), record.get("tags"), record.get("linkedin")};
+                    record.get("investments"), record.get("company"), record.get("tags"), record.get("linkedin"), record.get("email")};
                 RowNum++;
                 createRow(sheet, RowNum, str);
             }
+            sheet.autoSizeColumn(0);
+            sheet.autoSizeColumn(1);
+            sheet.autoSizeColumn(2);
+            sheet.autoSizeColumn(3);
+            sheet.autoSizeColumn(4);
+            sheet.autoSizeColumn(5);
+            sheet.autoSizeColumn(6);
             try (FileOutputStream fileOutputStream = new FileOutputStream(xlsxFileAddress)) {
                 workBook.write(fileOutputStream);
             }
@@ -231,11 +249,12 @@ System.out.println(item);
     private static List<Map<String, String>> readUrlToLinkedin() throws FileNotFoundException, IOException {
         List<Map<String, String>> result = new ArrayList<>();
         Reader reader = new FileReader(URL_TO_LINKEDINCSV);
-        Iterable<CSVRecord> records = CSVFormat.RFC4180.withSkipHeaderRecord().withHeader("url", "linkedin").parse(reader);
+        Iterable<CSVRecord> records = CSVFormat.RFC4180.withSkipHeaderRecord().withHeader("url", "linkedin", "email").parse(reader);
         for (CSVRecord record : records) {
             Map<String, String> item = new LinkedHashMap<>();
             item.put("url", record.get("url"));
             item.put("linkedin", record.get("linkedin"));
+            item.put("email", (record.size() >= 3 ? record.get("email") : null));
             result.add(item);
         }
         return result;
