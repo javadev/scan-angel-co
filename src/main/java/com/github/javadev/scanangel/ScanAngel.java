@@ -1,6 +1,5 @@
 package com.github.javadev.scanangel;
 	
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -157,6 +156,7 @@ System.out.println(item);
         }
         if (!"normal".equals(scanMode)) {
             System.out.println("Skip load profile");
+            return "SKIP";
         }
         Thread.sleep(3000);
         String profile = downloadProfile(driver, url);
@@ -183,16 +183,15 @@ System.out.println(item);
         try {
             XSSFWorkbook workBook = new XSSFWorkbook();
             XSSFSheet sheet = workBook.createSheet("sheet1");
-            String currentLine;
             int RowNum = 0;
-            BufferedReader br = new BufferedReader(new FileReader(csvFileAddress));
-            while ((currentLine = br.readLine()) != null) {
-                String str[] = currentLine.split(",");
-                XSSFRow currentRow=sheet.createRow(RowNum);
-                RowNum++;
-                for(int i=0;i<str.length;i++){
-                    currentRow.createCell(i).setCellValue(str[i]);
-                }
+            Reader in = new FileReader(csvFileAddress);
+            Iterable<CSVRecord> records = CSVFormat.RFC4180.withFirstRecordAsHeader().parse(in);
+            String header[] = new String[]{"Name", "Url", "Investments", "Company", "Tags", "Linkedin"};
+            createRow(sheet, RowNum, header);
+            for (CSVRecord record : records) {
+                String str[] = new String[]{record.get("name"), record.get("url"),
+                    record.get("investments"), record.get("company"), record.get("tags"), record.get("linkedin")};
+                createRow(sheet, RowNum, str);
             }
             try (FileOutputStream fileOutputStream = new FileOutputStream(xlsxFileAddress)) {
                 workBook.write(fileOutputStream);
@@ -202,7 +201,18 @@ System.out.println(item);
         }
     }
 
+    private static void createRow(XSSFSheet sheet, int RowNum, String[] str) {
+        XSSFRow currentRow=sheet.createRow(RowNum);
+        RowNum++;
+        for(int i=0;i<str.length;i++){
+            currentRow.createCell(i).setCellValue(str[i]);
+        }
+    }
+
     private static void generateCsv(String fileName, List<Map<String, String>> data) throws IOException {
+        if (data.isEmpty()) {
+            return;
+        }
         try (
             BufferedWriter writer = Files.newBufferedWriter(Paths.get(fileName));
 
