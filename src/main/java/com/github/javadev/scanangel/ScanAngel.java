@@ -27,7 +27,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 public class ScanAngel {
     private static final String URL_TO_LINKEDINCSV = "./urlToLinkedin.csv";
-    private static String scanMode = "normal";
+    private static String scanMode = "notnormal";
     private static List<Map<String, String>> urlToLinkedin = new ArrayList<>();
 
     public static void main(String ... args) throws Exception {
@@ -161,6 +161,7 @@ System.out.println(item);
         Thread.sleep(3000);
         String profile = downloadProfile(driver, url);
         if (profile.contains("Error code: TBLKIP")) {
+            scanMode = "BLOCKED";
             return "BLOCKED";
         }
         if (profile.contains("may have been made private or deleted")) {
@@ -231,7 +232,7 @@ System.out.println(item);
         Reader reader = new FileReader(URL_TO_LINKEDINCSV);
         Iterable<CSVRecord> records = CSVFormat.RFC4180.withHeader("url", "linkedin").parse(reader);
         for (CSVRecord record : records) {
-            Map<String, String> item = new HashMap<>();
+            Map<String, String> item = new LinkedHashMap<>();
             item.put("url", record.get("url"));
             item.put("linkedin", record.get("linkedin"));
             result.add(item);
@@ -239,4 +240,3 @@ System.out.println(item);
         return result;
     }
 }
-
