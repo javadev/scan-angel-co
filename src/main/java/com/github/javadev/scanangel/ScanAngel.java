@@ -27,7 +27,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 public class ScanAngel {
     private static final String URL_TO_LINKEDINCSV = "./urlToLinkedin.csv";
-    private static String scanMode = "notnormal";
+    private static String scanMode = "normal";
     private static List<Map<String, String>> urlToLinkedin = new ArrayList<>();
 
     public static void main(String ... args) throws Exception {
@@ -58,6 +58,7 @@ public class ScanAngel {
             dataToXlsx(url, urlData);
         }
         generateCsv(URL_TO_LINKEDINCSV, urlToLinkedin);
+        System.out.println(readFile(URL_TO_LINKEDINCSV));
         //Close the browser
         driver.quit();
     }
@@ -173,9 +174,9 @@ System.out.println(item);
         }
         org.jsoup.nodes.Document doc = org.jsoup.Jsoup.parse(profile);
         org.jsoup.nodes.Element element = doc.selectFirst("a[data-field=linkedin_url]");
-        Map<String, String> item = new HashMap<>();
+        Map<String, String> item = new LinkedHashMap<>();
         item.put("url", url);
-        item.put("linkedin", element == null ? null : element.attr("href"));
+        item.put("linkedin", element == null ? null : ("".equals(element.attr("href").trim()) ? null : element.attr("href")));
         urlToLinkedin.add(item);
         return element == null ? null : element.attr("href");
     }
@@ -230,7 +231,7 @@ System.out.println(item);
     private static List<Map<String, String>> readUrlToLinkedin() throws FileNotFoundException, IOException {
         List<Map<String, String>> result = new ArrayList<>();
         Reader reader = new FileReader(URL_TO_LINKEDINCSV);
-        Iterable<CSVRecord> records = CSVFormat.RFC4180.withHeader("url", "linkedin").parse(reader);
+        Iterable<CSVRecord> records = CSVFormat.RFC4180.withSkipHeaderRecord().withHeader("url", "linkedin").parse(reader);
         for (CSVRecord record : records) {
             Map<String, String> item = new LinkedHashMap<>();
             item.put("url", record.get("url"));
@@ -238,5 +239,10 @@ System.out.println(item);
             result.add(item);
         }
         return result;
+    }
+
+    private static String readFile(String path) throws IOException {
+        byte[] encoded = Files.readAllBytes(Paths.get(path));
+        return new String(encoded, java.nio.charset.StandardCharsets.UTF_8);
     }
 }
