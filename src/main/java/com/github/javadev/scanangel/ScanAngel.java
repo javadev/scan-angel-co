@@ -1,11 +1,22 @@
 package com.github.javadev.scanangel;
 	
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.phantomjs.PhantomJSDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriverService;
@@ -16,6 +27,12 @@ public class ScanAngel {
     private static String scanMode = "normal";
 
     public static void main(String ... args) throws Exception {
+        List<Map<String, String>> data = new ArrayList<>();
+        data.add(new HashMap<String, String>() {{ put("key1", "value1"); put("key2", "value2"); }});
+        data.add(new HashMap<String, String>() {{ put("key1", "value11"); put("key2", "value21"); }});
+        generateCsv("./test.csv", data);
+        csvToXlsx();
+        System.exit(0);
         DesiredCapabilities cap = DesiredCapabilities.phantomjs();
         cap.setCapability(PhantomJSDriverService.PHANTOMJS_PAGE_SETTINGS_PREFIX + "userAgent",
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.75 Safari/537.36");
@@ -144,5 +161,46 @@ System.out.println(item);
         org.jsoup.nodes.Document doc = org.jsoup.Jsoup.parse(profile);
         org.jsoup.nodes.Element element = doc.selectFirst("a[data-field=linkedin_url]");
         return element == null ? null : element.attr("href");
+    }
+
+    public static void csvToXlsx() {
+        try {
+            String csvFileAddress = "test.csv"; //csv file address
+            String xlsxFileAddress = "test.xlsx"; //xlsx file address
+            XSSFWorkbook workBook = new XSSFWorkbook();
+            XSSFSheet sheet = workBook.createSheet("sheet1");
+            String currentLine;
+            int RowNum = 0;
+            BufferedReader br = new BufferedReader(new FileReader(csvFileAddress));
+            while ((currentLine = br.readLine()) != null) {
+                String str[] = currentLine.split(",");
+                XSSFRow currentRow=sheet.createRow(RowNum);
+                RowNum++;
+                for(int i=0;i<str.length;i++){
+                    currentRow.createCell(i).setCellValue(str[i]);
+                }
+            }
+
+            try (FileOutputStream fileOutputStream = new FileOutputStream(xlsxFileAddress)) {
+                workBook.write(fileOutputStream);
+            }
+            System.out.println("Done");
+        } catch (Exception ex) {
+            System.out.println(ex.getMessage() + "Exception in try");
+        }
+    }
+
+    private static void generateCsv(String fileName, List<Map<String, String>> data) throws IOException {
+        try (
+            BufferedWriter writer = Files.newBufferedWriter(Paths.get(fileName));
+
+            CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT
+                    .withHeader(data.get(0).keySet().toArray(new String[]{})));
+        ) {
+            for (Map<String, String> item : data) {
+                csvPrinter.printRecord(item.values());
+            }
+            csvPrinter.flush();
+        }
     }
 }
