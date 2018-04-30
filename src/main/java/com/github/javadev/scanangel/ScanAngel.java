@@ -6,13 +6,22 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.phantomjs.PhantomJSDriver;
+import org.openqa.selenium.phantomjs.PhantomJSDriverService;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 public class ScanAngel {
     public static void main(String ... args) throws Exception {
-        final WebDriver driver = new PhantomJSDriver();
+        DesiredCapabilities cap = DesiredCapabilities.phantomjs();
+        cap.setCapability(PhantomJSDriverService.PHANTOMJS_PAGE_SETTINGS_PREFIX + "userAgent",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.75 Safari/537.36");
+        cap.setCapability(PhantomJSDriverService.PHANTOMJS_PAGE_SETTINGS_PREFIX + "loadImages", false);
+        cap.setCapability(PhantomJSDriverService.PHANTOMJS_PAGE_SETTINGS_PREFIX + "javascriptEnabled", true);
+        cap.setBrowserName("chrome");
+        cap.setVersion("42");  
+        final WebDriver driver = new PhantomJSDriver(cap);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> driver.quit(), "Shutdown-thread"));
 
@@ -104,9 +113,8 @@ System.out.println(item);
             "var xhr = new XMLHttpRequest();" +
             "xhr.open('GET', url, true);" +
             "xhr.setRequestHeader('Accept', 'text/html');"+
-//            "xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');"+
-            "xhr.setRequestHeader('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.75 Safari/537.36');"+
-            "xhr.withCredentials = false;" +
+            "xhr.setRequestHeader('Accept-Encoding', 'gzip, deflate, br');"+
+            "xhr.withCredentials = true;" +
             "xhr.onreadystatechange = function() {" +
             "  if (xhr.readyState == 4) {" +
             "    callback(xhr.responseText);" +
