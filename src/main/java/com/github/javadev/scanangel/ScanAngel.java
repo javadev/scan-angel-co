@@ -2,14 +2,17 @@ package com.github.javadev.scanangel;
 	
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -24,15 +27,15 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 public class ScanAngel {
+    private static final String URL_TO_LINKEDINCSV = "./urlToLinkedin.csv";
     private static String scanMode = "normal";
+    private static List<Map<String, String>> urlToLinkedin = new ArrayList<>();
 
     public static void main(String ... args) throws Exception {
-        List<Map<String, String>> data = new ArrayList<>();
-        data.add(new HashMap<String, String>() {{ put("key1", "value1"); put("key2", "value2"); }});
-        data.add(new HashMap<String, String>() {{ put("key1", "value11"); put("key2", "value21"); }});
-        generateCsv("./test.csv", data);
-        csvToXlsx();
-        System.exit(0);
+        try {
+            urlToLinkedin = readUrlToLinkedin();
+        } catch (FileNotFoundException ex) {
+        }
         DesiredCapabilities cap = DesiredCapabilities.phantomjs();
         cap.setCapability(PhantomJSDriverService.PHANTOMJS_PAGE_SETTINGS_PREFIX + "userAgent",
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.75 Safari/537.36");
@@ -53,13 +56,17 @@ public class ScanAngel {
                 "https://angel.co/building-owners/investors");
         for (String url : urls) {
             List<Map<String, String>> urlData = downloadForUrl(driver, url);
-            dataToXlsx(urlData);
+            dataToXlsx(url, urlData);
         }
+        generateCsv(URL_TO_LINKEDINCSV, urlToLinkedin);
         //Close the browser
         driver.quit();
     }
 
-    private static void dataToXlsx(List<Map<String, String>> data) {
+    private static void dataToXlsx(String url, List<Map<String, String>> data) throws IOException {
+        String fileName = url.replace("https://angel.co/", "").replaceAll("[-/]","_");
+        generateCsv(fileName + ".csv", data);
+        csvToXlsx(fileName + ".csv", fileName + ".xlsx");
     }
 
     private static List<Map<String, String>> downloadForUrl(WebDriver driver, String url) throws Exception {
@@ -143,6 +150,11 @@ System.out.println(item);
     }
 
     private static String getLinkedIn(WebDriver driver, String url) throws Exception {
+        for (Map<String, String> item : urlToLinkedin) {
+            if (item.get("url").equals(url)) {
+                return item.get("linkedin");
+            }
+        }
         if (!"normal".equals(scanMode)) {
             System.out.println("Skip load profile");
         }
@@ -160,13 +172,15 @@ System.out.println(item);
         }
         org.jsoup.nodes.Document doc = org.jsoup.Jsoup.parse(profile);
         org.jsoup.nodes.Element element = doc.selectFirst("a[data-field=linkedin_url]");
+        Map<String, String> item = new HashMap<>();
+        item.put("url", url);
+        item.put("linkedin", element == null ? null : element.attr("href"));
+        urlToLinkedin.add(item);
         return element == null ? null : element.attr("href");
     }
 
-    public static void csvToXlsx() {
+    public static void csvToXlsx(String csvFileAddress, String xlsxFileAddress) {
         try {
-            String csvFileAddress = "test.csv"; //csv file address
-            String xlsxFileAddress = "test.xlsx"; //xlsx file address
             XSSFWorkbook workBook = new XSSFWorkbook();
             XSSFSheet sheet = workBook.createSheet("sheet1");
             String currentLine;
@@ -180,13 +194,11 @@ System.out.println(item);
                     currentRow.createCell(i).setCellValue(str[i]);
                 }
             }
-
             try (FileOutputStream fileOutputStream = new FileOutputStream(xlsxFileAddress)) {
                 workBook.write(fileOutputStream);
             }
-            System.out.println("Done");
         } catch (Exception ex) {
-            System.out.println(ex.getMessage() + "Exception in try");
+            System.out.println(ex.getMessage());
         }
     }
 
@@ -203,4 +215,18 @@ System.out.println(item);
             csvPrinter.flush();
         }
     }
+
+    private static List<Map<String, String>> readUrlToLinkedin() throws FileNotFoundException, IOException {
+        List<Map<String, String>> result = new ArrayList<>();
+        Reader reader = new FileReader(URL_TO_LINKEDINCSV);
+        Iterable<CSVRecord> records = CSVFormat.RFC4180.withHeader("url", "linkedin").parse(reader);
+        for (CSVRecord record : records) {
+            Map<String, String> item = new HashMap<>();
+            item.put("url", record.get("url"));
+            item.put("linkedin", record.get("linkedin"));
+            result.add(item);
+        }
+        return result;
+    }
 }
+
