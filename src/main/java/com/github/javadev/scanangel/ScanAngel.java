@@ -13,6 +13,8 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 public class ScanAngel {
+    private static String scanMode = "normal";
+
     public static void main(String ... args) throws Exception {
         DesiredCapabilities cap = DesiredCapabilities.phantomjs();
         cap.setCapability(PhantomJSDriverService.PHANTOMJS_PAGE_SETTINGS_PREFIX + "userAgent",
@@ -124,13 +126,20 @@ System.out.println(item);
     }
 
     private static String getLinkedIn(WebDriver driver, String url) throws Exception {
-        Thread.sleep(300);
+        if (!"normal".equals(scanMode)) {
+            System.out.println("Skip load profile");
+        }
+        Thread.sleep(3000);
         String profile = downloadProfile(driver, url);
         if (profile.contains("Error code: TBLKIP")) {
             return "BLOCKED";
         }
         if (profile.contains("may have been made private or deleted")) {
             return "PRIVATE";
+        }
+        if (profile.contains("recaptcha")) {
+            scanMode = "RECAPTCHA";
+            return "RECAPTCHA";
         }
         org.jsoup.nodes.Document doc = org.jsoup.Jsoup.parse(profile);
         org.jsoup.nodes.Element element = doc.selectFirst("a[data-field=linkedin_url]");
