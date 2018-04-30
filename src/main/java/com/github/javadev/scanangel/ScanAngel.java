@@ -24,13 +24,17 @@ public class ScanAngel {
                 "https://angel.co/rental-housing/investors",
                 "https://angel.co/building-owners/investors");
         for (String url : urls) {
-            ScanAngel.downloadForUrl(driver, url);
+            List<Map<String, String>> urlData = downloadForUrl(driver, url);
+            dataToXlsx(urlData);
         }
         //Close the browser
         driver.quit();
     }
 
-    private static void downloadForUrl(WebDriver driver, String url) throws Exception {
+    private static void dataToXlsx(List<Map<String, String>> data) {
+    }
+
+    private static List<Map<String, String>> downloadForUrl(WebDriver driver, String url) throws Exception {
         driver.navigate().to(url);
 
         // Wait for the page to load, timeout after 10 seconds
@@ -70,6 +74,7 @@ System.out.println(".");
 System.out.println(item);
             }
         }
+        return data;
     }
 
     private static String downloadPage(WebDriver driver, String url, int pageNumber) {
@@ -116,8 +121,6 @@ System.out.println(item);
         if (profile.contains("Error code: TBLKIP")) {
             return "BLOCKED";
         }
-System.out.println(profile);
-System.exit(0);
         if (profile.contains("may have been made private or deleted")) {
             return "PRIVATE";
         }
