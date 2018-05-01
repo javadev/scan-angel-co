@@ -53,14 +53,40 @@ public class ScanAngel {
                 "https://angel.co/real-estate-1/investors",
                 "https://angel.co/rental-housing/investors",
                 "https://angel.co/building-owners/investors");
+        List<List<Map<String, String>>> listOfUrlData = new ArrayList<>();
+        List<String> savedUrls = new ArrayList<>();
         for (String url : urls) {
             List<Map<String, String>> urlData = downloadForUrl(driver, url);
-            dataToXlsx(url, urlData);
+            listOfUrlData.add(urlData);
+            savedUrls.add(url);
+        }
+        List<List<Map<String, String>>> listOfUrlDataWithoutDuplicates = removeDuplicates(listOfUrlData);
+        int index = 0;
+        for (List<Map<String, String>> urlData : listOfUrlDataWithoutDuplicates) {
+            dataToXlsx(savedUrls.get(index), urlData);
+            index += 1;
         }
         generateCsv(URL_TO_LINKEDINCSV, urlToLinkedin);
         System.out.println(readFile(URL_TO_LINKEDINCSV));
         //Close the browser
         driver.quit();
+    }
+
+    private static List<List<Map<String, String>>> removeDuplicates(List<List<Map<String, String>>> listOfUrlData) {
+        List<List<Map<String, String>>> result = new ArrayList<>();
+        Map<String, Map<String, String>> urlToItem = new LinkedHashMap<>();
+        for (List<Map<String, String>> list : listOfUrlData) {
+            List<Map<String, String>> newList = new ArrayList<>();
+            for (Map<String, String> item : list) {
+                if (urlToItem.containsKey(item.get("url"))) {
+                    continue;
+                }
+                urlToItem.put(item.get("url"), item);
+                newList.add(item);
+            }
+            result.add(newList);
+        }
+        return result;
     }
 
     private static void dataToXlsx(String url, List<Map<String, String>> data) throws IOException {
