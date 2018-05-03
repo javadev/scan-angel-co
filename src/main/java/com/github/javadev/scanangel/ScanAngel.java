@@ -28,7 +28,55 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 public class ScanAngel {
     private static final String URL_TO_LINKEDINCSV = "./urlToLinkedin.csv";
     private static String scanMode = "normal";
-    private static List<Map<String, String>> urlToLinkedin = new ArrayList<>();
+    private static List<CvsItem> urlToLinkedin = new ArrayList<>();
+
+    private interface HeadersAndValues {
+        String[] getHeaders();
+        List<String> getValues();
+    }
+
+    private static class CvsItem implements HeadersAndValues {
+        private String url;
+        private String linkedin;
+        private String email;
+
+        @Override
+        public String[] getHeaders() {
+            return new String[] {"url", "linkedin", "email"};
+        }
+
+        @Override
+        public List<String> getValues() {
+            return Arrays.asList(url, linkedin, email);
+        }
+    }
+
+    private static class DataItem implements HeadersAndValues {
+        private String name;
+        private String url;
+        private String investments;
+        private String company;
+        private String tags;
+        private String linkedin;
+        private String email;
+
+        @Override
+        public String[] getHeaders() {
+            return new String[] {"name", "url", "investments", "company", "tags", "linkedin", "email"};
+        }
+
+        @Override
+        public List<String> getValues() {
+            return Arrays.asList(name, url, investments, company, tags, linkedin, email);
+        }
+
+        @Override
+        public String toString() {
+            return "DataItem{" + "name=" + name + ", url=" + url + ", investments="
+                    + investments + ", company=" + company + ", tags=" + tags
+                    + ", linkedin=" + linkedin + ", email=" + email + '}';
+        }
+    }
 
     public static void main(String ... args) throws Exception {
         try {
@@ -53,17 +101,15 @@ public class ScanAngel {
                 "https://angel.co/real-estate-1/investors",
                 "https://angel.co/rental-housing/investors",
                 "https://angel.co/building-owners/investors");
-        List<List<Map<String, String>>> listOfUrlData = new ArrayList<>();
-        List<String> savedUrls = new ArrayList<>();
+        List<List<DataItem>> listOfUrlData = new ArrayList<>();
         for (String url : urls) {
-            List<Map<String, String>> urlData = downloadForUrl(driver, url);
+            List<DataItem> urlData = downloadForUrl(driver, url);
             listOfUrlData.add(urlData);
-            savedUrls.add(url);
         }
-        List<List<Map<String, String>>> listOfUrlDataWithoutDuplicates = removeDuplicates(listOfUrlData);
+        List<List<DataItem>> listOfUrlDataWithoutDuplicates = removeDuplicates(listOfUrlData);
         int index = 0;
-        for (List<Map<String, String>> urlData : listOfUrlDataWithoutDuplicates) {
-            dataToXlsx(savedUrls.get(index), urlData);
+        for (List<DataItem> urlData : listOfUrlDataWithoutDuplicates) {
+            dataToXlsx(urls.get(index), urlData);
             index += 1;
         }
         generateCsv(URL_TO_LINKEDINCSV, urlToLinkedin);
@@ -72,30 +118,29 @@ public class ScanAngel {
         driver.quit();
     }
 
-    private static List<List<Map<String, String>>> removeDuplicates(List<List<Map<String, String>>> listOfUrlData) {
-        List<List<Map<String, String>>> result = new ArrayList<>();
-        Map<String, Map<String, String>> urlToItem = new LinkedHashMap<>();
-        for (List<Map<String, String>> list : listOfUrlData) {
-            List<Map<String, String>> newList = new ArrayList<>();
-            for (Map<String, String> item : list) {
-                if (urlToItem.containsKey(item.get("url"))) {
-                    continue;
-                }
-                urlToItem.put(item.get("url"), item);
+    private static List<List<DataItem>> removeDuplicates(List<List<DataItem>> listOfUrlData) {
+        List<List<DataItem>> result = new ArrayList<>();
+        Map<String, DataItem> urlToItem = new HashMap<>();
+        for (List<DataItem> list : listOfUrlData) {
+            List<DataItem> newList = new ArrayList<>();
+            list.stream().filter((item) -> !(urlToItem.containsKey(item.url))).map((item) -> {
+                urlToItem.put(item.url, item);
+                return item;
+            }).forEach((item) -> {
                 newList.add(item);
-            }
+            });
             result.add(newList);
         }
         return result;
     }
 
-    private static void dataToXlsx(String url, List<Map<String, String>> data) throws IOException {
+    private static void dataToXlsx(String url, List<DataItem> data) throws IOException {
         String fileName = url.replace("https://angel.co/", "").replaceAll("[-/]","_");
         generateCsv(fileName + ".csv", data);
         csvToXlsx(fileName + ".csv", fileName + ".xlsx");
     }
 
-    private static List<Map<String, String>> downloadForUrl(WebDriver driver, String url) throws Exception {
+    private static List<DataItem> downloadForUrl(WebDriver driver, String url) throws Exception {
         driver.navigate().to(url);
 
         // Wait for the page to load, timeout after 20 seconds
@@ -107,7 +152,7 @@ public class ScanAngel {
 
 System.out.println(url + ", amountOfInvestors - " + amountOfInvestors);
         driver.manage().timeouts().setScriptTimeout(10, java.util.concurrent.TimeUnit.SECONDS);
-        List<Map<String, String>> data = new ArrayList<>();
+        List<DataItem> data = new ArrayList<>();
         outer:
         for (int index = 0; index < amountOfInvestors / 25; index += 1) {
             Thread.sleep(100);
@@ -116,7 +161,6 @@ System.out.println(".");
             org.jsoup.nodes.Document doc = org.jsoup.Jsoup.parse(page);
             int emptyCount = 0;
             for (int index2 = 0; index2 < 25; index2 += 1) {
-                Map<String, String> item = new LinkedHashMap<>();
                 org.jsoup.nodes.Element element = doc.selectFirst("body > div > div:nth-child(" + index2 + ") > div > div.item.column > div > div.text > div.name > a");
                 if (element == null) {
                     emptyCount += 1;
@@ -125,15 +169,16 @@ System.out.println(".");
                     }
                     continue;
                 }
-                item.put("name", element.text());
-                item.put("url", element.attr("href"));
-                item.put("investments", doc.selectFirst("body > div > div:nth-child(" + index2 + ") > div > div.column.investments > div.value").text());
-                item.put("company", doc.selectFirst("body > div > div:nth-child(" + index2 + ") > div > div.item.column > div > div.text > div.blurb").text());
-                item.put("tags", doc.selectFirst("body > div > div:nth-child(" + index2 + ") > div > div.item.column > div > div.text > div.tags").text());
-                item.put("linkedin", getLinkedIn(driver, element.attr("href")));
-                item.put("email", getEmail(element.attr("href")));
-                data.add(item);
-System.out.println(item);
+                DataItem dataItem = new DataItem();
+                dataItem.name = element.text();
+                dataItem.url = element.attr("href");
+                dataItem.investments = doc.selectFirst("body > div > div:nth-child(" + index2 + ") > div > div.column.investments > div.value").text();
+                dataItem.company = doc.selectFirst("body > div > div:nth-child(" + index2 + ") > div > div.item.column > div > div.text > div.blurb").text();
+                dataItem.tags = doc.selectFirst("body > div > div:nth-child(" + index2 + ") > div > div.item.column > div > div.text > div.tags").text();
+                dataItem.linkedin = getLinkedIn(driver, element.attr("href"));
+                dataItem.email = getEmail(element.attr("href"));
+                data.add(dataItem);
+System.out.println(dataItem);
             }
         }
         return data;
@@ -177,18 +222,18 @@ System.out.println(item);
     }
 
     private static String getEmail(String url) throws Exception {
-        for (Map<String, String> item : urlToLinkedin) {
-            if (item.get("url").equals(url)) {
-                return item.get("email");
+        for (CvsItem item : urlToLinkedin) {
+            if (item.url.equals(url)) {
+                return item.email;
             }
         }
         return null;
     }
 
     private static String getLinkedIn(WebDriver driver, String url) throws Exception {
-        for (Map<String, String> item : urlToLinkedin) {
-            if (item.get("url").equals(url)) {
-                return item.get("linkedin");
+        for (CvsItem item : urlToLinkedin) {
+            if (item.url.equals(url)) {
+                return item.linkedin;
             }
         }
         if (!"normal".equals(scanMode)) {
@@ -210,10 +255,10 @@ System.out.println(item);
         }
         org.jsoup.nodes.Document doc = org.jsoup.Jsoup.parse(profile);
         org.jsoup.nodes.Element element = doc.selectFirst("a[data-field=linkedin_url]");
-        Map<String, String> item = new LinkedHashMap<>();
-        item.put("url", url);
-        item.put("linkedin", element == null ? null : ("".equals(element.attr("href").trim()) ? null : element.attr("href")));
-        item.put("email", "null");
+        CvsItem item = new CvsItem();
+        item.url =  url;
+        item.linkedin = element == null ? null : ("".equals(element.attr("href").trim()) ? null : element.attr("href"));
+        item.email = null;
         urlToLinkedin.add(item);
         return element == null ? null : element.attr("href");
     }
@@ -255,7 +300,7 @@ System.out.println(item);
         }
     }
 
-    private static void generateCsv(String fileName, List<Map<String, String>> data) throws IOException {
+    private static void generateCsv(String fileName, List<? extends HeadersAndValues> data) throws IOException {
         if (data.isEmpty()) {
             return;
         }
@@ -263,24 +308,24 @@ System.out.println(item);
             BufferedWriter writer = Files.newBufferedWriter(Paths.get(fileName));
 
             CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT
-                    .withHeader(data.get(0).keySet().toArray(new String[]{})));
+                    .withHeader(data.get(0).getHeaders()));
         ) {
-            for (Map<String, String> item : data) {
-                csvPrinter.printRecord(item.values());
+            for (HeadersAndValues item : data) {
+                csvPrinter.printRecord(item.getValues());
             }
             csvPrinter.flush();
         }
     }
 
-    private static List<Map<String, String>> readUrlToLinkedin() throws FileNotFoundException, IOException {
-        List<Map<String, String>> result = new ArrayList<>();
+    private static List<CvsItem> readUrlToLinkedin() throws FileNotFoundException, IOException {
+        List<CvsItem> result = new ArrayList<>();
         Reader reader = new FileReader(URL_TO_LINKEDINCSV);
         Iterable<CSVRecord> records = CSVFormat.RFC4180.withSkipHeaderRecord().withHeader("url", "linkedin", "email").parse(reader);
         for (CSVRecord record : records) {
-            Map<String, String> item = new LinkedHashMap<>();
-            item.put("url", record.get("url"));
-            item.put("linkedin", record.get("linkedin"));
-            item.put("email", (record.size() >= 3 ? record.get("email") : null));
+            CvsItem item = new CvsItem();
+            item.url = record.get("url");
+            item.linkedin = record.get("linkedin");
+            item.email = (record.size() >= 3 ? record.get("email") : null);
             result.add(item);
         }
         return result;
