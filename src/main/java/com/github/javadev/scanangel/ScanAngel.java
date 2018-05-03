@@ -176,7 +176,7 @@ System.out.println(".");
                 dataItem.company = doc.selectFirst("body > div > div:nth-child(" + index2 + ") > div > div.item.column > div > div.text > div.blurb").text();
                 dataItem.tags = doc.selectFirst("body > div > div:nth-child(" + index2 + ") > div > div.item.column > div > div.text > div.tags").text();
                 dataItem.linkedin = getLinkedIn(driver, element.attr("href"));
-                dataItem.email = getEmail(element.attr("href"));
+                dataItem.email = getEmail(element.attr("href")).orElse(null);
                 data.add(dataItem);
 System.out.println(dataItem);
             }
@@ -221,20 +221,20 @@ System.out.println(dataItem);
             "xhr.send();", url);
     }
 
-    private static String getEmail(String url) throws Exception {
-        for (CvsItem item : urlToLinkedin) {
-            if (item.url.equals(url)) {
-                return item.email;
-            }
-        }
-        return null;
+    private static Optional<String> getEmail(String url) throws Exception {
+        return urlToLinkedin.stream()
+                .filter(item -> item.url.equals(url))
+                .map(item -> item.email)
+                .findFirst();
     }
 
     private static String getLinkedIn(WebDriver driver, String url) throws Exception {
-        for (CvsItem item : urlToLinkedin) {
-            if (item.url.equals(url)) {
-                return item.linkedin;
-            }
+        Optional<String> linkedin = urlToLinkedin.stream()
+                .filter(item -> item.url.equals(url))
+                .map(item -> item.linkedin)
+                .findFirst();
+        if (linkedin.isPresent()) {
+            return linkedin.get();
         }
         if (!"normal".equals(scanMode)) {
             System.out.println("Skip load profile");
@@ -288,14 +288,14 @@ System.out.println(dataItem);
             try (FileOutputStream fileOutputStream = new FileOutputStream(xlsxFileAddress)) {
                 workBook.write(fileOutputStream);
             }
-        } catch (Exception ex) {
+        } catch (IOException ex) {
             System.out.println(ex.getMessage());
         }
     }
 
     private static void createRow(XSSFSheet sheet, int RowNum, String[] str) {
         XSSFRow currentRow=sheet.createRow(RowNum);
-        for(int i=0;i<str.length;i++){
+        for (int i = 0; i < str.length; i++) {
             currentRow.createCell(i).setCellValue(str[i]);
         }
     }
