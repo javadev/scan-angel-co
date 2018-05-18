@@ -90,7 +90,7 @@ public class ScanAngel {
         cap.setCapability(PhantomJSDriverService.PHANTOMJS_PAGE_SETTINGS_PREFIX + "javascriptEnabled", true);
         cap.setBrowserName("chrome");
         cap.setVersion("42");  
-        final WebDriver driver = new PhantomJSDriver(cap);
+        final WebDriver driver = createPhantomJSDriver(cap);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> driver.quit(), "Shutdown-thread"));
 
@@ -116,6 +116,10 @@ public class ScanAngel {
         System.out.println(readFile(URL_TO_LINKEDINCSV));
         //Close the browser
         driver.quit();
+    }
+
+    private static WebDriver createPhantomJSDriver(DesiredCapabilities cap) {
+        return new PhantomJSDriver(cap);
     }
 
     private static List<List<DataItem>> removeDuplicates(List<List<DataItem>> listOfUrlData) {
@@ -222,19 +226,19 @@ System.out.println(dataItem);
     }
 
     private static Optional<String> getEmail(String url) throws Exception {
-        return urlToLinkedin.stream()
-                .filter(item -> item.url.equals(url))
-                .map(item -> item.email)
-                .findFirst();
+        for (CvsItem item : urlToLinkedin) {
+            if (item.url.equals(url)) {
+                return Optional.ofNullable(item.email);
+            }
+        }
+        return Optional.empty();
     }
 
     private static String getLinkedIn(WebDriver driver, String url) throws Exception {
-        Optional<String> linkedin = urlToLinkedin.stream()
-                .filter(item -> item.url.equals(url))
-                .map(item -> item.linkedin)
-                .findFirst();
-        if (linkedin.isPresent()) {
-            return linkedin.get();
+        for (CvsItem item : urlToLinkedin) {
+            if (item.url.equals(url)) {
+                return item.linkedin;
+            }
         }
         if (!"normal".equals(scanMode)) {
             System.out.println("Skip load profile");
