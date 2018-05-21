@@ -189,6 +189,7 @@ System.out.println(dataItem);
     }
 
     private static String downloadPage(WebDriver driver, String url, int pageNumber) {
+        try {
         return (String) ((JavascriptExecutor) driver).executeAsyncScript(
             "var url = arguments[0];" +
             "var callback = arguments[arguments.length - 1];" +
@@ -206,6 +207,9 @@ System.out.println(dataItem);
             "  }" +
             "};" +
             "xhr.send();", url + "?page=" + pageNumber);
+        } catch (Exception ex) {
+            return "";
+        }
     }
 
     private static String downloadProfile(WebDriver driver, String url) {
