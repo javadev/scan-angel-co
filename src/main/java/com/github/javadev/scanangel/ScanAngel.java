@@ -281,10 +281,13 @@ System.out.println(dataItem);
             String header[] = new String[]{"Name", "Url", "Investments", "Company", "Tags", "Linkedin", "Email"};
             createRow(sheet, RowNum, header);
             for (CSVRecord record : records) {
+                try {
                 String str[] = new String[]{record.get("name"), record.get("url"),
                     record.get("investments"), record.get("company"), record.get("tags"), record.get("linkedin"), record.get("email")};
                 RowNum++;
                 createRow(sheet, RowNum, str);
+                } catch (Exception ex) {
+                }
             }
             sheet.autoSizeColumn(0);
             sheet.autoSizeColumn(1);
